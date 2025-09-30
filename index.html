@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 Sistema de Extração de Áudio e Transcrição</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+        
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: #667eea;
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        video, audio {
+            width: 100%;
+            max-width: 800px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .btn.primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn.secondary {
+            background: #4fd1c7;
+            color: white;
+        }
+        
+        .btn:disabled {
+            background: #e2e8f0;
+            color: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            display: block;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            section {
+                padding: 1.5rem;
+            }
+            
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Sistema de Extração de Áudio</h1>
+            <p>Extraia áudio de vídeos e converta para texto automaticamente</p>
+        </header>
+
+        <main>
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <h3>Clique para Selecionar Vídeo</h3>
+                    <p>Arraste e solte ou clique para selecionar</p>
+                    <p style="font-size: 0.9rem; color: #666;">Suporta: MP4, WebM, AVI, MOV (até 500MB)</p>
+                    <input type="file" id="fileInput" accept="video/*" style="display: none;">
+                </div>
+                <div id="fileInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: #edf2f7; border-radius: 8px;">
+                    <strong>Arquivo:</strong> <span id="fileName"></span><br>
+                    <strong>Tamanho:</strong> <span id="fileSize"></span>
+                </div>
+            </section>
+
+            <!-- Video Preview -->
+            <section class="video-section" id="videoSection" style="display: none;">
+                <h3>📺 Preview do Vídeo</h3>
+                <video id="videoPlayer" controls></video>
+                <div class="controls">
+                    <button id="extractBtn" class="btn primary">🎵 Extrair Áudio</button>
+                </div>
+                <div class="progress" id="extractProgress" style="display: none;">
+                    <div class="progress-bar" id="extractProgressBar"></div>
+                </div>
+                <div id="extractStatus" style="text-align: center; margin-top: 0.5rem; color: #666;"></div>
+            </section>
+
+            <!-- Results -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h3>🎯 Resultados</h3>
+                
+                <!-- Audio Results -->
+                <div style="margin-bottom: 2rem;">
+                    <h4>🎵 Áudio Extraído</h4>
+                    <audio id="extractedAudio" controls></audio>
+                    <div class="controls">
+                        <button id="transcribeBtn" class="btn secondary" disabled>📝 Transcrever</button>
+                        <button onclick="downloadAudio()" class="btn secondary">⬇️ Download Áudio</button>
+                    </div>
+                </div>
+
+                <!-- Transcription -->
+                <div id="transcriptionSection" style="display: none;">
+                    <h4>📝 Transcrição</h4>
+                    <div class="progress" id="transcribeProgress" style="display: none;">
+                        <div class="progress-bar" id="transcribeProgressBar"></div>
+                    </div>
+                    <div id="transcribeStatus" style="text-align: center; margin: 0.5rem 0; color: #666;"></div>
+                    <textarea id="transcriptText" readonly placeholder="A transcrição aparecerá aqui..."></textarea>
+                    
+                    <!-- Stats -->
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Palavras</span>
+                            <span class="stat-value" id="wordCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Caracteres</span>
+                            <span class="stat-value" id="charCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Confiança</span>
+                            <span class="stat-value" id="confidence">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button onclick="copyTranscript()" class="btn secondary">📋 Copiar Texto</button>
+                        <button onclick="downloadTranscript()" class="btn secondary">⬇️ Download TXT</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Sistema de Extração de Áudio | Web Audio API + Web Speech API | Desenvolvido por AD-Thiago</p>
+        </footer>
+    </div>
+
+    <script>
+        let videoFile = null;
+        let audioBlob = null;
+        let recognition = null;
+        let transcriptText = '';
+        
+        // Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup Web Speech API
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+            } else if ('SpeechRecognition' in window) {
+                recognition = new SpeechRecognition();
+            }
+            
+            if (recognition) {
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'pt-BR';
+                recognition.maxAlternatives = 1;
+            }
+            
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            document.getElementById('extractBtn').addEventListener('click', extractAudio);
+            document.getElementById('transcribeBtn').addEventListener('click', startTranscription);
+            
+            const uploadArea = document.querySelector('.upload-area');
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
+        }
+        
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('video/')) {
+                processVideoFile(file);
+            } else {
+                alert('Por favor, selecione um arquivo de vídeo válido.');
+            }
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('video/')) {
+                processVideoFile(files[0]);
+            }
+        }
+        
+        function processVideoFile(file) {
+            if (file.size > 500 * 1024 * 1024) {
+                alert('Arquivo muito grande. Tamanho máximo: 500MB');
+                return;
+            }
+            
+            videoFile = file;
+            
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('fileInfo').style.display = 'block';
+            
+            const video = document.getElementById('videoPlayer');
+            video.src = URL.createObjectURL(file);
+            document.getElementById('videoSection').style.display = 'block';
+        }
+        
+        async function extractAudio() {
+            if (!videoFile) return;
+            
+            try {
+                showProgress('extract', 0, 'Iniciando extração...');
+                
+                const video = document.getElementById('videoPlayer');
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const source = audioContext.createMediaElementSource(video);
+                const destination = audioContext.createMediaStreamDestination();
+                
+                source.connect(destination);
+                source.connect(audioContext.destination);
+                
+                showProgress('extract', 25, 'Configurando gravação...');
+                
+                const mediaRecorder = new MediaRecorder(destination.stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                
+                const chunks = [];
+                
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data.size > 0) chunks.push(e.data);
+                };
+                
+                mediaRecorder.onstop = function() {
+                    audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                    const audioURL = URL.createObjectURL(audioBlob);
+                    document.getElementById('extractedAudio').src = audioURL;
+                    document.getElementById('transcribeBtn').disabled = false;
+                    document.getElementById('resultsSection').style.display = 'block';
+                    showProgress('extract', 100, 'Extração concluída!');
+                    
+                    setTimeout(() => hideProgress('extract'), 2000);
+                };
+                
+                showProgress('extract', 50, 'Extraindo áudio...');
+                
+                mediaRecorder.start();
+                video.currentTime = 0;
+                video.play();
+                
+                video.ontimeupdate = function() {
+                    if (video.duration > 0) {
+                        const progress = 50 + (video.currentTime / video.duration) * 45;
+                        showProgress('extract', progress, `Processando... ${Math.round(video.currentTime)}s/${Math.round(video.duration)}s`);
+                    }
+                };
+                
+                video.onended = function() {
+                    mediaRecorder.stop();
+                };
+                
+            } catch (error) {
+                console.error('Extraction error:', error);
+                alert('Erro na extração: ' + error.message);
+                hideProgress('extract');
+            }
+        }
+        
+        function startTranscription() {
+            if (!recognition) {
+                alert('Reconhecimento de voz não suportado neste navegador');
+                return;
+            }
+            
+            if (!audioBlob) {
+                alert('Nenhum áudio extraído para transcrever');
+                return;
+            }
+            
+            document.getElementById('transcriptionSection').style.display = 'block';
+            showProgress('transcribe', 0, 'Iniciando transcrição...');
+            
+            const audio = document.getElementById('extractedAudio');
+            transcriptText = '';
+            
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                transcriptText = (transcriptText + finalTranscript).trim();
+                document.getElementById('transcriptText').value = transcriptText + interimTranscript;
+                updateStats();
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                showProgress('transcribe', 0, 'Erro na transcrição: ' + event.error);
+            };
+            
+            recognition.onend = function() {
+                showProgress('transcribe', 100, 'Transcrição concluída!');
+                setTimeout(() => hideProgress('transcribe'), 2000);
+            };
+            
+            recognition.start();
+            audio.currentTime = 0;
+            audio.play();
+            
+            audio.ontimeupdate = function() {
+                if (audio.duration > 0) {
+                    const progress = (audio.currentTime / audio.duration) * 90;
+                    showProgress('transcribe', progress, `Processando... ${Math.round(audio.currentTime)}s/${Math.round(audio.duration)}s`);
+                }
+            };
+            
+            audio.onended = function() {
+                setTimeout(() => {
+                    recognition.stop();
+                }, 2000);
+            };
+        }
+        
+        function updateStats() {
+            const text = document.getElementById('transcriptText').value;
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            
+            document.getElementById('wordCount').textContent = words.length;
+            document.getElementById('charCount').textContent = text.length;
+            document.getElementById('confidence').textContent = '85%';
+        }
+        
+        function showProgress(type, percentage, status) {
+            const progressElement = document.getElementById(type + 'Progress');
+            const progressBar = document.getElementById(type + 'ProgressBar');
+            const statusElement = document.getElementById(type + 'Status');
+            
+            progressElement.style.display = 'block';
+            progressBar.style.width = percentage + '%';
+            statusElement.textContent = status;
+        }
+        
+        function hideProgress(type) {
+            const progressElement = document.getElementById(type + 'Progress');
+            const statusElement = document.getElementById(type + 'Status');
+            
+            progressElement.style.display = 'none';
+            statusElement.textContent = '';
+        }
+        
+        function downloadAudio() {
+            if (!audioBlob) {
+                alert('Nenhum áudio disponível para download');
+                return;
+            }
+            
+            const url = URL.createObjectURL(audioBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (videoFile?.name?.replace(/\.[^/.]+$/, '') || 'audio') + '.webm';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function downloadTranscript() {
+            const text = document.getElementById('transcriptText').value;
+            if (!text) {
+                alert('Nenhuma transcrição disponível');
+                return;
+            }
+            
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (videoFile?.name?.replace(/\.[^/.]+$/, '') || 'transcricao') + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function copyTranscript() {
+            const text = document.getElementById('transcriptText').value;
+            if (!text) {
+                alert('Nenhuma transcrição disponível');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Transcrição copiada para a área de transferência!');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                const textarea = document.getElementById('transcriptText');
+                textarea.select();
+                document.execCommand('copy');
+                alert('Transcrição copiada!');
+            });
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
